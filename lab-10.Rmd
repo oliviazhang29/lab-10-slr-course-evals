@@ -1,7 +1,7 @@
 ---
 title: "Lab 10 - Grading the professor, Pt. 1"
-author: "Insert your name here"
-date: "Insert date here"
+author: "Olivia Zhang"
+date: "5/14/2025"
 output: github_document
 ---
 
@@ -11,31 +11,146 @@ output: github_document
 library(tidyverse) 
 library(tidymodels)
 library(openintro)
+library(broom)
 ```
 
 ## Exercise 1
 
-*Provide your answer here.*  
-Add code chunks as needed. Don't forget to label your code chunks.
-
-
 ```{r exercise1_code}
-# Add your R code here
+evals %>%
+  ggplot(aes(x = score)) +
+  geom_histogram()
+
+mean(evals$score)
 ```
+
+The distribution of score is skewed to the left, which means students tend to rats their courses pretty high (M = 4.17). It is expected because many students do not want to rate their professors/course bad even if they think the courses need improvement.
 
 ## Exercise 2
 
-*Provide your answer here.*  
-Add code chunks as needed.
-
 ```{r exercise2_code}
-# Add your R code here
+evals %>%
+  ggplot(aes(x = bty_avg, y = score)) +
+  geom_point()
 ```
 
-## Additional Exercises
+It seems most courses are taught by low to average looking professors who have good evals. However, better looking professors tend to have less bad evals.
 
-*Repeat the format above for additional exercises.*
+## Exercise 3
 
-## Hint
+```{r exercise3_code}
+evals %>%
+  ggplot(aes(x = bty_avg, y = score)) +
+  geom_jitter()
+```
 
-For Exercise 12, the `relevel()` function can be helpful!
+Jittering seperates dots that overlap with each other, making the distribution more representative of all data points. The trend obversed in the original version is more clearly displayed in this version. That is, most courses are taught by average looking professors and have medium to good evals.
+
+## Exercise 4
+
+```{r exercise4_code}
+m_bty <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ bty_avg, data = evals)
+tidy(m_bty)
+```
+
+The linear model predicting average professor evaluation score from average beauty rating is: score = 3.88 + 0.0666*bty_avg
+
+## Exercise 5
+
+```{r exercise5_code}
+evals %>%
+  ggplot(aes(x = bty_avg, y = score)) +
+  geom_jitter() +
+  geom_smooth(method = "lm", color = "orange", se = FALSE)
+```
+
+The shading represents standard error, turning it off makes the trend more visable and the plot cleaner.
+
+## Exercise 6
+
+The slope tells us that evaluation scores increase with beauty ratings. Specifically, as beauty rate increases 1 unit, course evaluation increases 0.0666.
+
+## Exercise 7
+
+The intercept represents the evaluation score when the professor's beauty rating is 0. It is just a mathematical artifact because a beauty rating of 0 doesn't mean anything (no one has a beauty rating of 0).
+
+## Exercise 8
+
+```{r exercise8_code}
+glance(m_bty)$r.squared
+```
+
+The R2 of this model is 0.04, which means 4% of variance in the evaluation scores is explained by professors' beauty ratings.
+
+## Exercise 9
+
+```{r exercise9_code}
+m_gen <- lm(score ~ gender, data = evals)
+tidy(m_gen)
+```
+
+The reference level is female. The slope coefficient indicates that male professors are evaluated 0.142 unit higher than female professors.
+
+## Exercise 10
+
+The equation of the line for male professors is: score = 4.09 + 0.142; 
+and the equation for female professors is: score = 4.09.
+
+## Exercise 11
+
+```{r exercise11_code}
+m_rank <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ rank, data = evals)
+tidy(m_rank)
+```
+
+Linear model predicting eval score from rank: score = 4.28 - 0.13*TenureTrack - 0.145*Tenured
+
+The intercept indicates that for teaching professors, the average eval score is 4.28. The eval score is 0.130 unit less for tenure track professors and 0.145 unit less for tenured professors compared to teaching professors.
+
+## Exercise 12
+
+```{r exercise12_code}
+evals$rank_relevel <- relevel(evals$rank, ref = "tenure track")
+```
+
+## Exercise 13
+
+```{r exercise13_code}
+m_rank_relevel <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ rank_relevel, data = evals)
+tidy(m_rank_relevel)
+glance(m_rank_relevel)$r.squared
+```
+
+Linear model predicting eval score from rank_relevel: score = 4.15 + 0.13*Teaching - 0.0155*Tenured
+
+The intercept indicates that for tenure track professors, the average eval score is 4.15. The eval score is 0.130 unit more for teaching  professors and 0.0155 unit less for tenured professors compared to tenure track professors.
+
+R2 of this model is 0.01, which means that rank explains 1% of variance in the evaluation scores.
+
+## Exercise 14
+
+```{r exercise14_code}
+evals$tenure_eligible <- ifelse(evals$rank == "teaching", "no", "yes")
+```
+
+## Exercise 15
+
+```{r exercise15_code}
+m_tenure_eligible <- linear_reg() %>%
+  set_engine("lm") %>%
+  fit(score ~ tenure_eligible, data = evals)
+tidy(m_tenure_eligible)
+glance(m_tenure_eligible)$r.squared
+```
+
+Linear model predicting eval score from tenure_eligibleness: score = 4.28 - 0.141*tenure_eligible
+
+The intercept indicates that for teaching professors, the average eval score is 4.28. The eval score is 0.141 unit less for tenure eligible professors.
+
+R2 of this model is 0.01, which means that whether a professor is tenure eligible explains 1% of variance in the evaluation scores.
